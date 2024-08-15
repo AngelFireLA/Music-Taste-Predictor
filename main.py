@@ -4,12 +4,16 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import requests
 import sqlite3
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
 LASTFM_API_KEY = os.getenv('LASTFM_API_KEY')
 LASTFM_USERNAME = os.getenv('LASTFM_USERNAME')
-
+print(SPOTIFY_CLIENT_ID)
 
 # Authenticate with Spotify
 auth_manager = SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET)
@@ -220,8 +224,8 @@ def save_data_to_db(track_name, artist_name, combined_data):
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         track_name,
-        combined_data.get('album_name'),
         combined_data.get('tier'),
+        combined_data.get('album_name'),
         artist_id,
         combined_data.get('release_date'),
         combined_data.get('track_duration_ms'),

@@ -3,3 +3,5 @@
 music/
 /__pycache__
 .env
+.cache
+music_data.db
