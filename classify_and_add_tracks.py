@@ -8,7 +8,7 @@ from mutagen.mp3 import MP3
 from mutagen.flac import FLAC
 from mutagen.mp4 import MP4
 from mutagen.id3 import ID3, TIT2, TPE1
-from main import get_combined_data, save_data_to_db
+from music_data import get_combined_data, save_data_to_db
 
 # Initialize SQLite database
 conn = sqlite3.connect('music_data.db')
@@ -34,8 +34,10 @@ def classify_and_populate_tracks(root_folder):
         if not os.path.exists(folder_path):
             print(f"Folder {folder_path} does not exist, skipping.")
             continue
-
+        i = 0
         for filename in os.listdir(folder_path):
+            i+=1
+            print(i)
             if filename.endswith(('.mp3', '.flac', '.m4a', '.wav')):  # Add other extensions if needed
                 track_name = clean_filename(filename)
                 artist_name = get_artist_from_metadata(os.path.join(folder_path, filename))

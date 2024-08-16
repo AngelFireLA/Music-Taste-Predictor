@@ -13,7 +13,6 @@ SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
 LASTFM_API_KEY = os.getenv('LASTFM_API_KEY')
 LASTFM_USERNAME = os.getenv('LASTFM_USERNAME')
-print(SPOTIFY_CLIENT_ID)
 
 # Authenticate with Spotify
 auth_manager = SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET)
@@ -91,20 +90,21 @@ def get_spotify_data(track_name, artist_name):
 
         # Audio Features
         audio_features = sp.audio_features(track_id)[0]
-        track_info.update({
-            'danceability': audio_features['danceability'],
-            'energy': audio_features['energy'],
-            'key': audio_features['key'],
-            'loudness': audio_features['loudness'],
-            'mode': audio_features['mode'],
-            'speechiness': audio_features['speechiness'],
-            'acousticness': audio_features['acousticness'],
-            'instrumentalness': audio_features['instrumentalness'],
-            'liveness': audio_features['liveness'],
-            'valence': audio_features['valence'],
-            'tempo': audio_features['tempo'],
-            'time_signature': audio_features['time_signature']
-        })
+        if audio_features is not None:
+            track_info.update({
+                'danceability': audio_features['danceability'],
+                'energy': audio_features['energy'],
+                'key': audio_features['key'],
+                'loudness': audio_features['loudness'],
+                'mode': audio_features['mode'],
+                'speechiness': audio_features['speechiness'],
+                'acousticness': audio_features['acousticness'],
+                'instrumentalness': audio_features['instrumentalness'],
+                'liveness': audio_features['liveness'],
+                'valence': audio_features['valence'],
+                'tempo': audio_features['tempo'],
+                'time_signature': audio_features['time_signature']
+            })
 
         # Artist Info (Spotify)
         artist_id = track['artists'][0]['id']
@@ -152,8 +152,9 @@ def get_lastfm_data(track_name, artist_name):
     track_url = f"http://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key={LASTFM_API_KEY}&artist={artist_name}&track={track_name}&username={LASTFM_USERNAME}&format=json"
     track_response = requests.get(track_url)
     track_data = track_response.json().get('track')
-
+    print(track_data)
     if track_data:
+
         track_info.update({
             'playcount_user': int(track_data['userplaycount']) if 'userplaycount' in track_data else None,
             'loved': int(track_data['userloved']) if 'userloved' in track_data else None,
@@ -260,13 +261,13 @@ def get_combined_data(track_name, artist_name):
         combined_data = {**spotify_data, **lastfm_data}
         return combined_data
     else:
-        return None
+        return {**lastfm_data}
 
 
 # # Example usage
-# track_name = "Lucid Dream"
-# artist_name = "Scarlett"
-# combined_data = get_combined_data(track_name, artist_name)
+track_name = "Believer"
+artist_name = "Imagine Dragons"
+combined_data = get_combined_data(track_name, artist_name)
 #
 # if combined_data:
 #     save_data_to_db(track_name, artist_name, combined_data)
