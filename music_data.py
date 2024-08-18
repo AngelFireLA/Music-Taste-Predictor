@@ -17,7 +17,7 @@ LASTFM_USERNAME = os.getenv('LASTFM_USERNAME')
 # Authenticate with Spotify
 auth_manager = SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET)
 sp = spotipy.Spotify(auth_manager=auth_manager)
-
+sp.recommendations()
 # Initialize SQLite database
 conn = sqlite3.connect('music_data.db')
 cursor = conn.cursor()
@@ -63,6 +63,7 @@ cursor.execute('''
         tempo REAL,
         time_signature INTEGER,
         playcount_user INTEGER,
+        track_tags TEXT,
         FOREIGN KEY(artist_id) REFERENCES artists(artist_id)
     )
 ''')
@@ -221,8 +222,8 @@ def save_data_to_db(track_name, artist_name, combined_data):
         INSERT OR REPLACE INTO tracks (
             title, tier, album_name, artist_id, release_date, duration_ms, popularity, isrc, spotify_url, lastfm_url, 
             danceability, energy, key, loudness, mode, speechiness, acousticness, instrumentalness, liveness, valence, 
-            tempo, time_signature, playcount_user
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            tempo, time_signature, playcount_user, track_tags
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         track_name,
         combined_data.get('tier'),
@@ -247,6 +248,7 @@ def save_data_to_db(track_name, artist_name, combined_data):
         combined_data.get('tempo'),
         combined_data.get('time_signature'),
         combined_data.get('playcount_user'),
+        combined_data.get('track_tags'),
     ))
 
     conn.commit()
@@ -267,7 +269,7 @@ def get_combined_data(track_name, artist_name):
 # # Example usage
 track_name = "Believer"
 artist_name = "Imagine Dragons"
-combined_data = get_combined_data(track_name, artist_name)
+# combined_data = get_combined_data(track_name, artist_name)
 #
 # if combined_data:
 #     save_data_to_db(track_name, artist_name, combined_data)

@@ -28,7 +28,7 @@ SELECT
     t.liveness, 
     t.valence, 
     t.tempo,
-    t.tags,
+    t.track_tags,
     a.genres_spotify, 
     a.genres_lastfm, 
     t.tier
@@ -57,13 +57,13 @@ def split_and_one_hot_encode(df, column):
 
 genres_spotify_expanded = split_and_one_hot_encode(df, 'genres_spotify')
 genres_lastfm_expanded = split_and_one_hot_encode(df, 'genres_lastfm')
-genres_lastfm_expanded = split_and_one_hot_encode(df, 'tags')
+tags_lastfm_expanded = split_and_one_hot_encode(df, 'track_tags')
 
 # Combine the original dataframe with the one-hot encoded genres/tags
-df = pd.concat([df, genres_spotify_expanded, genres_lastfm_expanded], axis=1)
+df = pd.concat([df, genres_spotify_expanded, genres_lastfm_expanded, tags_lastfm_expanded], axis=1)
 
 # Drop the original genre/tag columns
-df.drop(columns=['genres_spotify', 'genres_lastfm'], inplace=True)
+df.drop(columns=['genres_spotify', 'genres_lastfm', 'track_tags'], inplace=True)
 
 # Encode the tier as a numeric value
 df['tier'] = df['tier'].map({'S': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1, 'E': 0})
@@ -76,26 +76,18 @@ X = df.drop(columns=['tier'])
 y = df['tier']
 
 # Split the data into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=45)
 
 # Train the Random Forest Classifier
-rf = RandomForestClassifier(random_state=42)
+rf = RandomForestClassifier(random_state=45)
 rf.fit(X_train, y_train)
 
 # Save the feature names used in training
 X_train_columns = X_train.columns
 np.save('X_train_columns.npy', X_train_columns)
 
-# Save the trained model to disk
-joblib.dump(rf, 'random_forest_classifier.pkl')
-
 # Predict on the test set
 y_pred = rf.predict(X_test)
-
-# Evaluate the classifier
-print("Classification Report:\n", classification_report(y_test, y_pred))
-print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
-print("Accuracy Score:", accuracy_score(y_test, y_pred))
 
 # Feature Importance
 importance = rf.feature_importances_
@@ -104,14 +96,14 @@ indices = np.argsort(importance)[::-1]
 
 
 param_grid = {
-    'n_estimators': [100, 300, 500, 1000],
-    'max_depth': [10, 20, 30, None],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4],
+    'n_estimators': [100, 200, 500],  # Slightly lower range to prevent overfitting
+    'max_depth': [5, 10, 15, 20],  # Introduce shallower trees
+    'min_samples_split': [5, 10, 15],  # Increase the minimum samples required to split
+    'min_samples_leaf': [2, 4, 8],  # Increase the minimum samples required at a leaf node
 }
 
 
-grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=10, n_jobs=-1, verbose=2)
+grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=15, n_jobs=-1, verbose=2)
 grid_search.fit(X_train, y_train)
 
 # Best parameters from GridSearch
@@ -130,6 +122,18 @@ y_pred_best = best_rf.predict(X_test)
 print("Classification Report (Best Model):\n", classification_report(y_test, y_pred_best))
 print("Confusion Matrix (Best Model):\n", confusion_matrix(y_test, y_pred_best))
 print("Accuracy Score (Best Model):", accuracy_score(y_test, y_pred_best))
+
+# Evaluate the best model on the training set
+y_pred_train = best_rf.predict(X_train)
+print("Accuracy on Training Data:", accuracy_score(y_train, y_pred_train))
+print("Classification Report (Training Data):\n", classification_report(y_train, y_pred_train))
+print("Confusion Matrix (Training Data):\n", confusion_matrix(y_train, y_pred_train))
+
+# Evaluate the best model on the test set
+y_pred_test = best_rf.predict(X_test)
+print("Accuracy on Test Data:", accuracy_score(y_test, y_pred_test))
+print("Classification Report (Test Data):\n", classification_report(y_test, y_pred_test))
+print("Confusion Matrix (Test Data):\n", confusion_matrix(y_test, y_pred_test))
 
 # Plot Feature Importance of the best model
 best_importance = best_rf.feature_importances_

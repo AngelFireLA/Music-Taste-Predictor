@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder
 from music_data import get_combined_data
 
 # Load the trained model
-model = joblib.load('best_random_forest_classifier.pkl')
+model = joblib.load('cv 15  updated parameters  test acc 0.35  acc 0.47.pkl')
 
 # Load the LabelEncoder used in the training
 label_encoder = LabelEncoder()
@@ -18,9 +18,9 @@ X_train_columns = np.load('X_train_columns.npy', allow_pickle=True)
 
 # Function to split and one-hot encode genres/tags
 def split_and_one_hot_encode(df, column):
-    print(df.columns)
     genres_expanded = df[column].str.get_dummies(sep=', ')
     return genres_expanded
+
 
 
 # Example function to predict tier for a new song
@@ -35,18 +35,28 @@ def predict_tier_for_new_song(track_name, artist_name):
     # Prepare the data in the same format as training data
     features = pd.DataFrame([combined_data])
 
+    # Add a check to handle unseen artist names
+    def encode_artist_name(artist_name):
+        if artist_name in label_encoder.classes_:
+            return label_encoder.transform([artist_name])[0]
+        else:
+            # Handle unseen artist by assigning a default value (e.g., the most frequent artist label)
+            # Or you can assign a new label, such as len(label_encoder.classes_) (requires model retraining)
+            print(f"Artist '{artist_name}' not seen during training. Encoding as 'Unknown Artist'.")
+            return -1  # You can use any default value here
+
     # Encode the artist_name with the same LabelEncoder used during training
-    features['artist_name_encoded'] = label_encoder.transform([artist_name])
+    features['artist_name_encoded'] = encode_artist_name(artist_name)
 
     # One-hot encode the genres and tags
-    genres_spotify_expanded = split_and_one_hot_encode(features, 'genres_spotify')
-    genres_lastfm_expanded = split_and_one_hot_encode(features, 'genres_lastfm')
+    genres_spotify_expanded = split_and_one_hot_encode(features, 'artist_genres_spotify')
+    genres_lastfm_expanded = split_and_one_hot_encode(features, 'artist_tags')
 
     # Combine the original dataframe with the one-hot encoded genres/tags
     features = pd.concat([features, genres_spotify_expanded, genres_lastfm_expanded], axis=1)
 
     # Drop columns not used as features
-    features.drop(columns=['title', 'artist_name', 'genres_spotify', 'genres_lastfm'], inplace=True)
+    features.drop(columns=['track_name', 'artist_name', 'artist_genres_spotify', 'artist_tags'], inplace=True)
 
     # Ensure all necessary columns are present
     missing_cols = set(X_train_columns) - set(features.columns)
@@ -65,4 +75,4 @@ def predict_tier_for_new_song(track_name, artist_name):
 
 # Example usage
 if __name__ == "__main__":
-    predict_tier_for_new_song("Believer", "Imagine Dragons")
+    predict_tier_for_new_song("Survive", "Vanze/Neon Dreams")
